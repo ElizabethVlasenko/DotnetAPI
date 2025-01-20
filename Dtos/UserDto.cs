@@ -1,4 +1,4 @@
-﻿namespace DotnetAPI.Models
+﻿namespace DotnetAPI.Dtos
 {
     //partial to allow adding something to the class from inside another file
     public partial class UserDto
