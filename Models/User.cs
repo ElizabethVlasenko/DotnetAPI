@@ -1,7 +1,7 @@
 ﻿namespace DotnetAPI.Models
 {
     //partial to allow adding something to the class from inside another file
-    public partial class Users
+    public partial class User
     {
         public int UserId { get; set; }
         public string FirstName { get; set; }
@@ -10,7 +10,7 @@
         public string Gender { get; set; }
         public Boolean Active { get; set; }
 
-        public Users()
+        public User()
         {
             if (FirstName == null)
             {
