@@ -1,5 +1,6 @@
 ﻿using DotnetAPI.Data;
 using DotnetAPI.Dtos;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Cryptography.KeyDerivation;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Data.SqlClient;
@@ -12,6 +13,9 @@ using System.Text;
 
 namespace DotnetAPI.Controllers
 {
+    [Authorize] //lets the middleware to check if a user is authorized or not
+    [ApiController]
+    [Route("[controller]")]
     public class AuthController : ControllerBase
     {
         private readonly DataContextDapper _dapper;
@@ -22,6 +26,7 @@ namespace DotnetAPI.Controllers
             _config = config;
         }
 
+        [AllowAnonymous]
         [HttpPost("Register")]
         public IActionResult Register(UserForRegistrationDto userForRegistration)
         {
@@ -88,6 +93,7 @@ namespace DotnetAPI.Controllers
             throw new Exception("Passwords do not match");
         }
 
+        [AllowAnonymous]
         [HttpPost("Login")]
         public IActionResult Login(UserForLoginDto userForLogin)
         {
@@ -116,6 +122,23 @@ namespace DotnetAPI.Controllers
             return Ok(new Dictionary<string, string>
             {
                 {"token", CreateToken(userId) }
+            });
+        }
+
+        [HttpGet("RefreshToken")]
+        public IActionResult RefreshToken()
+        {
+            string userId = User.FindFirst("userId")?.Value + "";
+
+            string sqlGetUserId = "SELECT userId FROM TutorialAppSchema.Users WHERE UserId = "
+                + userId;
+
+            int userIdFromDb = _dapper.LoadDataSingle<int>(sqlGetUserId);
+
+
+            return Ok(new Dictionary<string, string>
+            {
+                {"token", CreateToken(userIdFromDb) }
             });
         }
 
