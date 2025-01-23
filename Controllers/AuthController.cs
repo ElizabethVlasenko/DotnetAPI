@@ -3,7 +3,10 @@ using DotnetAPI.Dtos;
 using Microsoft.AspNetCore.Cryptography.KeyDerivation;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Data.SqlClient;
+using Microsoft.IdentityModel.Tokens;
 using System.Data;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
 
@@ -60,7 +63,23 @@ namespace DotnetAPI.Controllers
                     //adding entry to the DB
                     if (_dapper.ExecuteSqlWithParameters(sqlAddAuth, sqlParameters))
                     {
-                        return Ok();
+                        string sqlAddUser = @"
+                            INSERT INTO  TutorialAppSchema.Users(
+                              [FirstName]
+                            , [LastName]
+                            , [Email]
+                            , [Gender]
+                            , [Active]) VALUES ('"
+                                    + userForRegistration.FirstName +
+                            "' , '" + userForRegistration.LastName +
+                             "' , '" + userForRegistration.Email +
+                             "' , '" + userForRegistration.Gender +
+                             "' , 1)";
+                        if (_dapper.ExecuteSql(sqlAddUser))
+                        {
+                            return Ok();
+                        }
+                        throw new Exception("Failed to add User");
                     }
                     throw new Exception("Failed to register User");
                 }
@@ -74,7 +93,7 @@ namespace DotnetAPI.Controllers
         {
             string sqlForHashAndSalt = @"SELECT
                 [PasswordHash],
-                [PasswordSalt] FROM TutorialAppSchema.Auth Where Email = '" + userForLogin.Email + "'";
+                [PasswordSalt] FROM TutorialAppSchema.Auth WHERE Email = '" + userForLogin.Email + "'";
 
             UserForLoginConfirmationDto userForConfirmation = _dapper
                 .LoadDataSingle<UserForLoginConfirmationDto>(sqlForHashAndSalt);
@@ -89,7 +108,15 @@ namespace DotnetAPI.Controllers
                 }
             }
 
-            return Ok();
+            string sqlGetUserId = @"SELECT [UserId] FROM TutorialAppSchema.Users WHERE Email = '" +
+                userForLogin.Email + "'";
+
+            int userId = _dapper.LoadDataSingle<int>(sqlGetUserId);
+
+            return Ok(new Dictionary<string, string>
+            {
+                {"token", CreateToken(userId) }
+            });
         }
 
         private byte[] GetPasswordHash(string password, byte[] passwordSalt)
@@ -108,6 +135,40 @@ namespace DotnetAPI.Controllers
                 );
 
             return passwordHash;
+        }
+
+        private string CreateToken(int userId)
+        {
+            Claim[] claims = new Claim[]
+            {
+                new Claim("userId", userId.ToString())
+            };
+
+            string? tokenKeyString = _config.GetSection("Appsettings:TokenKey").Value;
+
+            SymmetricSecurityKey tokenKey = new SymmetricSecurityKey(
+                    Encoding.UTF8.GetBytes(
+                        tokenKeyString != null ? tokenKeyString : ""
+                    )
+                );
+
+            SigningCredentials credentials = new SigningCredentials(
+                    tokenKey,
+                    SecurityAlgorithms.HmacSha512Signature
+                );
+
+            SecurityTokenDescriptor descriptor = new SecurityTokenDescriptor()
+            {
+                Subject = new ClaimsIdentity(claims),
+                SigningCredentials = credentials,
+                Expires = DateTime.Now.AddDays(1)
+            };
+
+            JwtSecurityTokenHandler tokenHandler = new JwtSecurityTokenHandler();
+
+            SecurityToken token = tokenHandler.CreateToken(descriptor);
+
+            return tokenHandler.WriteToken(token);
         }
     }
 }
