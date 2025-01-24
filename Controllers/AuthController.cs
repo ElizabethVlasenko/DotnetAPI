@@ -126,7 +126,7 @@ namespace DotnetAPI.Controllers
         {
             string userId = User.FindFirst("userId")?.Value + "";
 
-            string sqlGetUserId = "SELECT userId FROM TutorialAppSchema.Users WHERE UserId = "
+            string sqlGetUserId = "SELECT UserId FROM TutorialAppSchema.Users WHERE UserId = "
                 + userId;
 
             int userIdFromDb = _dapper.LoadDataSingle<int>(sqlGetUserId);
