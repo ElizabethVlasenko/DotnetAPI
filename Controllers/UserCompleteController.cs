@@ -7,36 +7,63 @@ namespace DotnetAPI.Controllers
 {
     [Route("[controller]")]
     [ApiController]
-    public class UserCompleteController : ControllerBase
+    public class UserController : ControllerBase
     {
         DataContextDapper _dapper;
-        public UserCompleteController(IConfiguration config)
+        public UserController(IConfiguration config)
         {
             _dapper = new DataContextDapper(config);
         }
 
-        [HttpGet("GetUsers/{userId}/{isActive}")]
-        public IEnumerable<UserComplete> GetUsers(int userId, bool isActive)
+        [HttpGet("TestConnection")]
+        public DateTime TestConnection()
         {
-            string sql = @"EXEC TutorialAppSchema.spUsers_Get";
+            return _dapper.LoadDataSingle<DateTime>("SELECT GETDATE()");
+        }
 
-            string parameters = "";
+        //[HttpGet("GetUsers/{testValue}")]
+        ////public IActionResult Test()
+        //public string[] GetUsers(string testValue)
+        //{
+        //    string[] responceArray = new string[] { "test1", "test2", testValue };
+        //    return responceArray;
+        //}
 
-            if (userId != 0)
-            {
-                parameters += ", @UserId=" + userId.ToString();
-            }
+        [HttpGet("GetUsers")]
+        //public IActionResult Test()
+        public IEnumerable<User> GetUsers()
+        {
+            string sql = @"
+                    SELECT  [UserId]
+                    , [FirstName]
+                    , [LastName]
+                    , [Email]
+                    , [Gender]
+                    , [Active]
+                    FROM  TutorialAppSchema.Users;";
 
-            if (isActive)
-            {
-                parameters += ", @Active=" + isActive.ToString();
-            }
-
-            if (parameters.Length > 0) sql += parameters.Substring(1);
-
-            IEnumerable<UserComplete> users = _dapper.LoadData<UserComplete>(sql);
+            IEnumerable<User> users = _dapper.LoadData<User>(sql);
 
             return users;
+        }
+
+        [HttpGet("GetSingleUsers/{userId}")]
+        //public IActionResult Test()
+        public User GetSingleUsers(int userId)
+        {
+            string sql = @"
+                    SELECT  [UserId]
+                    , [FirstName]
+                    , [LastName]
+                    , [Email]
+                    , [Gender]
+                    , [Active]
+                    FROM  TutorialAppSchema.Users
+                    WHERE UserId = " + userId.ToString();
+
+            User user = _dapper.LoadDataSingle<User>(sql);
+
+            return user;
         }
 
         [HttpPut("EditUser")]
@@ -98,6 +125,20 @@ namespace DotnetAPI.Controllers
 
         //USER SALARY
 
+        [HttpGet("GetUserSalary/{userId}")]
+        public UserSalary GetUserSalary(int userId)
+        {
+            string sql = @"
+                SELECT [UserId]
+                , [Salary]
+                FROM TutorialAppSchema.UserSalary
+                WHERE UserId = " + userId.ToString();
+
+            UserSalary userSalary = _dapper.LoadDataSingle<UserSalary>(sql);
+
+            return userSalary;
+        }
+
         [HttpPut("EditUserSalary")]
         public IActionResult EditUserSalary(UserSalary userSalary)
         {
@@ -148,6 +189,21 @@ namespace DotnetAPI.Controllers
         }
 
         //USER JOB INFO
+
+        [HttpGet("GetUserJobInfo/{userId}")]
+        public UserJobInfo GetUserJobInfo(int userId)
+        {
+            string sql = @"
+                SELECT [UserId]
+                , [JobTitle]
+                , [Department]
+                FROM TutorialAppSchema.UserJobInfo
+                WHERE UserId = " + userId.ToString();
+
+            UserJobInfo userJobInfo = _dapper.LoadDataSingle<UserJobInfo>(sql);
+
+            return userJobInfo;
+        }
 
         [HttpPut("EditUserJobInfo")]
         public IActionResult EditUserJobInfo(UserJobInfo userJobInfo)
