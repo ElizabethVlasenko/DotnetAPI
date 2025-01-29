@@ -15,7 +15,7 @@ namespace DotnetAPI.Controllers
         }
 
         [HttpGet("GetUsers/{userId}/{isActive}")]
-        public IEnumerable<UserComplete> GetUsers(int userId, bool isActive)
+        public IEnumerable<UserComplete> GetUsers(int userId = 0, bool isActive = false)
         {
             string sql = @"EXEC TutorialAppSchema.spUsers_Get";
 
